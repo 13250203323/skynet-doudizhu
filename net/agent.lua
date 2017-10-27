@@ -3,7 +3,6 @@ local netpack = require "skynet.netpack"
 local socket = require "skynet.socket"
 local sproto = require "sproto"
 local sprotoloader = require "sprotoloader"
-local roledb = require("roledb")
 local player = require("player")
 
 local WATCHDOG
