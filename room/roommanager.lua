@@ -24,11 +24,14 @@ local function createRoom()
 	local index = checkRoomIdx()
 	local rm = skynet.newservice("room")
 	room[index] = rm
+	print("++++++++++创建房间：", index)
+	local result = skynet.call(rm, "lua", "create", idx)
 	return index, rm
 end
 
 -- 进入房间
 function CMD.enterRoom(fd, id)
+	print("++++++++++进入房间：", id)
 	for idx, rm in pairs(room) do
 		-- idx：房间号，rm：房间
 		local result = skynet.call(rm, "lua", "addPlayer", fd, id, idx)
@@ -45,6 +48,7 @@ end
 
 -- 退出房间
 function CMD.quitRoom(fd, id, idx)
+	print("++++++++++退出房间：", id)
 	local rm = room[idx]
 	if not rm then 
 		return 8
@@ -54,6 +58,7 @@ end
 
 -- 准备，取消准备
 function CMD.changeState(fd, id, idx, state)
+	print("++++++++++准备，取消准备：", id, state)
 	local rm = room[idx]
 	if not rm then 
 		return 8
@@ -63,6 +68,7 @@ end
 
 -- 关闭房间
 function CMD.closeRoom(idx)
+	print("++++++++++关闭房间：", idx)
 	if room[idx] then 
 		room[idx] = nil
 	end

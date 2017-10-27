@@ -18,7 +18,9 @@ local playerId
 
 function REQUEST:quit()
 	if oPlayer then 
-		skynet.call("RoomManager", "lua", "quitRoom", client_fd, playerId)
+		local roomIdx = oPlayer:getRoom()
+		local roomManager = skynet.uniqueservice("roommanager")
+		skynet.call(roomManager, "lua", "quitRoom", client_fd, playerId, roomIdx)
 		oPlayer = nil 
 	end
 	skynet.call(WATCHDOG, "lua", "close", client_fd)
