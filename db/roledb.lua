@@ -7,6 +7,9 @@ local roledb = {
 	["123456"] = "linhui",
 	["10010"] = "3331723",
 	["10086"] = "crazy",
+	["misswu"] = "misswu",
+	["jean"] = "jean",
+	["dabiaoge"] = "dabiaoge",
 }
 
 function CMD.checkRole(id, passwork)
@@ -20,7 +23,16 @@ function CMD.checkRole(id, passwork)
 		return 2 -- 密码错误
 	end
 	login[id] = true
+	print("+++++++++++登录成功：", id)
 	return 0
+end
+
+-- 下线
+function CMD.unLine(id)
+	if login[id] then 
+		print("+++++++++++下线：", id)
+		login[id] = nil
+	end
 end
 
 skynet.start(function()

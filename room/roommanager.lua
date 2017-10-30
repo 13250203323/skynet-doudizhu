@@ -10,7 +10,7 @@ local room = {}
 local CMD = {}
 
 local function checkRoomIdx()
-	local index = 0
+	local index = 1
 	while true do 
 		if not room[index] then 
 			return index
@@ -25,7 +25,7 @@ local function createRoom()
 	local rm = skynet.newservice("room")
 	room[index] = rm
 	print("++++++++++创建房间：", index)
-	local result = skynet.call(rm, "lua", "create", idx)
+	local result = skynet.call(rm, "lua", "create", index)
 	return index, rm
 end
 
@@ -48,21 +48,21 @@ end
 
 -- 退出房间
 function CMD.quitRoom(fd, id, idx)
-	print("++++++++++退出房间：", id)
 	local rm = room[idx]
 	if not rm then 
 		return 8
 	end	
+	print("++++++++++退出房间：", id)
 	skynet.call(rm, "lua", "removePlayer", fd, id)
 end
 
 -- 准备，取消准备
 function CMD.changeState(fd, id, idx, state)
-	print("++++++++++准备，取消准备：", id, state)
 	local rm = room[idx]
 	if not rm then 
 		return 8
 	end	
+	print("++++++++++准备，取消准备：", id, state)
 	return skynet.call(rm, "lua", "changeState", fd, id, state)
 end
 
@@ -72,6 +72,16 @@ function CMD.closeRoom(idx)
 	if room[idx] then 
 		room[idx] = nil
 	end
+end
+
+-- 叫地主或者抢地主
+function CMD.calllandholder(fd, id, idx, bCall)
+	local rm = room[idx]
+	if not rm then 
+		return 8
+	end	
+	print("++++++++++叫地主或抢地主：", id, bCall)
+	return skynet.call(rm, "lua", "calllandholder", fd, id, bCall)
 end
 
 skynet.start(function()

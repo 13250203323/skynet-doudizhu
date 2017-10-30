@@ -1,5 +1,5 @@
 package.cpath = "luaclib/?.so"
-package.path = "lualib/?.lua;doudizhu/?.lua;doudizhu/proto/?.lua"
+package.path = "lualib/?.lua;doudizhu/?.lua;doudizhu/proto/?.lua;doudizhu/net/?.lua;doudizhu/tools/?.lua;"
 
 if _VERSION ~= "Lua 5.3" then
 	error "Use lua 5.3"
@@ -8,6 +8,8 @@ end
 local socket = require "client.socket"
 local proto = require "proto"
 local sproto = require "sproto"
+local errorCode = require "errorcode"
+require "track"
 
 local host = sproto.new(proto.s2c):host "package"
 local request = host:attach(sproto.new(proto.c2s))
@@ -65,6 +67,7 @@ local function print_request(name, args)
 		for k,v in pairs(args) do
 			print(k,v)
 		end
+		print(dump(args))
 	end
 end
 
@@ -73,6 +76,11 @@ local function print_response(session, args)
 	if args then
 		for k,v in pairs(args) do
 			print(k,v)
+			if k == "errcode" then 
+				if errorCode[v] then 
+					print(errorCode[v])
+				end
+			end
 		end
 	end
 end
@@ -106,15 +114,25 @@ while true do
 			send_request("quit")
 			socket.close(fd)
 			return
-		elseif cmd == "login" then 
+		elseif cmd == "1" then 
+			send_request("login", {id="123456", passwork="linhui"})
+		elseif cmd == "2" then 
+			send_request("login", {id="10086", passwork="crazy"})
+		elseif cmd == "3" then 
 			send_request("login", {id="10010", passwork="3331723"})
-		elseif cmd == "quickstart" then 
+		elseif cmd == "4" then 
+			send_request("login", {id="misswu", passwork="misswu"})
+		elseif cmd == "5" then 
+			send_request("login", {id="jean", passwork="jean"})
+		elseif cmd == "6" then 
+			send_request("login", {id="dabiaoge", passwork="dabiaoge"})
+		elseif cmd == "11" then 
 			send_request("quickstart")
-		elseif cmd == "readystart" then 
-			send_request("readystart")
-		elseif cmd == "cancelready" then 
+		elseif cmd == "21" then 
+			send_request("ready")
+		elseif cmd == "22" then 
 			send_request("cancelready")
-		elseif cmd == "cancelstart" then 
+		elseif cmd == "12" then 
 			send_request("cancelstart")
 		end
 	else

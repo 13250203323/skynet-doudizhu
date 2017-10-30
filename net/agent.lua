@@ -17,6 +17,8 @@ local oPlayer
 local playerId
 
 function REQUEST:quit()
+	local roledb = skynet.uniqueservice("roledb")
+	skynet.call(roledb, "lua", "unLine", playerId)
 	if oPlayer then 
 		local roomIdx = oPlayer:getRoom()
 		local roomManager = skynet.uniqueservice("roommanager")
@@ -71,7 +73,7 @@ function REQUEST:cancelstart()
 end
 
 -- 准备
-function REQUEST:readystart()
+function REQUEST:ready()
 	if not oPlayer then 
 		return {errcode = 4} -- 未登录
 	elseif oPlayer:getRoom() == 0 then 
@@ -80,6 +82,7 @@ function REQUEST:readystart()
 		return {errcode = 7} -- 准备中
 	end
 	oPlayer:setState(2)
+	local roomIdx = oPlayer:getRoom()
 	local roomManager = skynet.uniqueservice("roommanager")
 	local err = skynet.call(roomManager, "lua", "changeState", client_fd, playerId, roomIdx, 2)
 	return {errcode = err}
@@ -92,12 +95,28 @@ function REQUEST:cancelready()
 	elseif oPlayer:getRoom() == 0 then 
 		return {errcode = 6} -- 没进房间
 	elseif oPlayer:getState() == 1 then 
-		return {errcode = 7} -- 未准备
+		return {errcode = 12} -- 未准备
 	end
 	oPlayer:setState(1)
+	local roomIdx = oPlayer:getRoom()
 	local roomManager = skynet.uniqueservice("roommanager")
-	skynet.call(roomManager, "lua", "changeState", client_fd, playerId, roomIdx, 1)
-	return {errcode = 0}
+	local err = skynet.call(roomManager, "lua", "changeState", client_fd, playerId, roomIdx, 1)
+	return {errcode = err}
+end
+
+-- 叫地主或抢地主
+function REQUEST:calllandholder()
+	if not oPlayer then 
+		return {errcode = 4} -- 没玩家
+	elseif oPlayer:getRoom() == 0 then 
+		return {errcode = 6} -- 没进房间
+	elseif oPlayer:getState() == 1 then 
+		return {errcode = 12} -- 未准备
+	end
+	local roomIdx = oPlayer:getRoom()
+	local roomManager = skynet.uniqueservice("roommanager")
+	local err = skynet.call(roomManager, "lua", "calllandholder", client_fd, playerId, roomIdx, self.call)
+	return {errcode = err}
 end
 
 local function request(name, args, response)
@@ -144,10 +163,33 @@ function CMD.start(conf)
 	host = sprotoloader.load(1):host "package"
 	send_request = host:attach(sprotoloader.load(2))
 	skynet.fork(function()
-		-- while true do
-		-- 	send_package(send_request "heartbeat")
-		-- 	skynet.sleep(500)
-		-- end
+		while true do
+			-- local t = {
+			-- 	{
+			-- 		card = {
+			-- 			[1] = 11,
+			-- 			[2] = 8,
+			-- 			[3] = 9,
+			-- 			[4] = 6,
+			-- 			[5] = 14,
+			-- 		},
+			-- 		type = 1,
+			-- 	},
+			-- 	{
+			-- 		card = {
+			-- 			[1] = 15,
+			-- 			[2] = 3,
+			-- 			[3] = 11,
+			-- 			[4] = 7,
+			-- 			[5] = 4,
+			-- 		},
+			-- 		type = 2,
+			-- 	},
+			-- }
+			-- local t = {[1]=1,[2]=2}
+			-- send_package(send_request("handcard", {dizhu=t}))
+			skynet.sleep(500)
+		end
 	end)
 
 	client_fd = fd

@@ -31,23 +31,34 @@ local function makeCards()
 		if num <= 0 then 
 			return {}
 		end
-		local result = {}
+		local result = {
+			[CARD_HONGTAO] = {type = CARD_HONGTAO, card = {}},
+			[CARD_HEITAO] = {type = CARD_HEITAO, card = {}},
+			[CARD_MEIHUA] = {type = CARD_MEIHUA, card = {}},
+			[CARD_FANGKUAI] = {type = CARD_FANGKUAI, card = {}},
+			[CARD_JOKER] = {type = CARD_JOKER, card = {}},
+		} 
 		for i=1, num do
 			local t, r = getARandomCard(temp)
 			temp = t
 			local iType = math.ceil(r/13)
-			if not result[iType] then 
-				result[iType] = {}
-			end
 			if iType >= 5 then -- "王"
 				r = r%13+15
-				table.insert(result[iType], r)
+				table.insert(result[iType]["card"], r)
 			else
 				r = (r%13<=2 and 13+r%13) or r%13
-				table.insert(result[iType], r)
+				table.insert(result[iType]["card"], r)
 			end
 		end
-		return result
+
+		local sortResult = {}
+		for _, data in ipairs(result) do
+			if #data["card"] > 0 then 
+				table.insert(sortResult, data)
+			end 
+		end
+
+		return sortResult
 	end
 
 	local lCard_1 = getCrad(3)

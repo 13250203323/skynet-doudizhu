@@ -26,7 +26,7 @@ quickstart 3 {
     }
 }
 
-readystart 4 {
+ready 4 {
     response {
         errcode 0 : integer
     }    
@@ -44,22 +44,19 @@ cancelstart 6 {
     }
 }
 
+calllandholder 7 {
+    request {
+        call 0 : boolean
+    }
+}
 
 ]]
 
--- .person {
---     name 0 : string
---     id 1 : integer
-    
---     .phoneNumber {
---         number 0: string
---     }
-
---     phone 3 : *phoneNumber
--- }
-
--- login 4 {
---     request person
--- }
-
+--[[
+1-quickstart：快速开始
+2-ready：准备
+3-cancelready：取消准备
+4-cancelstart：取消开始
+5-calllandholder：是否叫地主或者抢地主
+]]
 return c2s

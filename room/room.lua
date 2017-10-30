@@ -12,6 +12,10 @@ require("track")
 local host = sprotoloader.load(1):host("package")
 local send_request = host:attach(sprotoloader.load(2))
 
+local startGame
+local endGame
+local setState
+
 -- 房间变量
 local CMD = {}
 local player = {} -- id集合
@@ -19,44 +23,86 @@ local client = {} -- fd集合
 local state = {} -- 状态集合：1-未准备，2-准备，3-游戏中
 local bRunning = false
 local index = 0 -- 房号
+local isNew = true -- 是否新建
 
 -- 游戏进行中变量
 local playerCard = {} -- 玩家牌，key：seat
 local dizhuCard = {} -- 地主牌
+local callpriority = 0 -- 当前抢地主的权利
+local dizhuSeat = 0 -- 地主
 
 local function send_package(fd, pack)
 	local package = string.pack(">s2", pack)
 	socket.write(fd, package)
 end
 
+------------------------------------------
+-- 分发数据相关：start
+------------------------------------------
 -- 分发数据：name-协议名，msg-内容
 local function dispatchMessage(fd, name, msg)
 	if not bRunning then 
 		return 
 	end
+	local pack = send_request(name, msg)
+	send_package(fd, pack)
+end
+
+local function dispatchAllPlayer(name, msg)
+	for seat, fd in pairs(client) do
+		dispatchMessage(fd, name, msg)
+	end
+end
+------------------------------------------
+-- 分发数据相关：end
+------------------------------------------
+
+------------------------------------------
+-- 游戏主体逻辑：start
+------------------------------------------
+-- 发牌
+local function handOutCard()
+	dizhuCard, playerCard = makecard.makeCards()
+	print("<<<<<<<<<<<<<<发牌")
+	print(dump(dizhuCard))
 	skynet.fork(function()
-		local pack = send_request(name, msg)
-		send_package(fd, pack)
+		for seat, fd in pairs(client) do
+			dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
+				otherplayer_1 = 13, otherplayer_2 = 13})
+		end
+		skynet.sleep(1000)
+		local ran = math.random(1,3)
+		callpriority = ran
+		dispatchAllPlayer("callpriority", {priority = ran, time = 20})
 	end)
 end
 
-local function startGame()
-	print("--------->>开始游戏：", index)
-	bRunning = true
-	-- 发牌
-	dizhuCard, playerCard = makecard.makeCards()
-	-- for seat, fd in pairs(client) do
-	-- 	dispatchMessage(fd, "handcard", {dizhu = dizhuCard, player = playerCard[seat]})
-	-- end
+-- 抢地主逻辑
+local function callLandHolder()
 
 end
+------------------------------------------
+-- 游戏主体逻辑：end
+------------------------------------------
 
-local function endGame()
+function startGame()
+	print("--------->>开始游戏：", index)
+	bRunning = true
+	setState(3)
+	-- 发牌
+	handOutCard()
+	-- 选地主
+
+
+end
+ 
+function endGame()
 	print("--------->>结束游戏：", index)
 	bRunning = false
 	playerCard = {}
-	dizhuCard {}
-
+	dizhuCard = {}
+	dizhuSeat = 0
+	setState(1)
 end
 
 local function getSeat()
@@ -68,13 +114,16 @@ local function getSeat()
 	error("room error!")
 end
 
-local function setState(iState)
+function setState(iState)
 	for idx, _ in pairs(state) do
 		state[idx] = iState
 	end
 end
 
 local function checkGameState()
+	if bRunning then 
+		return 4 -- 游戏中
+	end
 	local nums = table.nums(player)
 	if nums == 0 then 
 		return 1 -- 没人，将摧毁房间
@@ -99,14 +148,19 @@ end
 
 function CMD.create(idx)
 	index = idx
+	isNew = true
 end
 
 function CMD.addPlayer(fd, id, idx)
-	assert(index == idx, "房间出错")
+	assert(index == idx, "房间出错", index, idx)
 	print("--------->>加入玩家：", id, idx)
 	for seat, client_id in pairs(player) do
 		if client_id == id then 
 			client[seat] = fd
+			if bRunning then -- 在游戏中，发送相关信息
+				dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
+					otherplayer_1 = 13, otherplayer_2 = 13})
+			end
 			return true
 		end
 	end
@@ -118,7 +172,8 @@ function CMD.addPlayer(fd, id, idx)
 	local seat = getSeat()
 	player[seat] = id
 	client[seat] = fd
-	
+
+	isNew = false	
 	return true
 end
 
@@ -137,6 +192,10 @@ function CMD.removePlayer(fd, id)
 end
 
 function CMD.changeState(fd, id, iState)
+	if bRunning then 
+		print("--------->>游戏中")
+		return 11
+	end
 	for seat, client_id in pairs(player) do
 		if id == client_id then 
 			state[seat] = iState
@@ -144,6 +203,13 @@ function CMD.changeState(fd, id, iState)
 		end
 	end
 	return 9 -- 没有该玩家
+end
+
+function CMD.calllandholder(fd, id, bCall)
+	if not bRunning then 
+		return 13
+	end
+	callLandHolder(fd, id, bCall)
 end
 
 skynet.start(function()
@@ -159,7 +225,7 @@ local function checkStartGame()
 		while true do
 			if not bRunning then 
 				local iResult = checkGameState()
-				if iResult == 1 then 
+				if iResult == 1 and not isNew then 
 					removeSelf()
 					return 
 				elseif iResult == 0 then
