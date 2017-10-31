@@ -53,7 +53,7 @@ function CMD.quitRoom(fd, id, idx)
 		return 8
 	end	
 	print("++++++++++退出房间：", id)
-	skynet.call(rm, "lua", "removePlayer", fd, id)
+	return skynet.call(rm, "lua", "removePlayer", fd, id)
 end
 
 -- 准备，取消准备

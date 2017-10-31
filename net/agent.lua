@@ -66,10 +66,12 @@ function REQUEST:cancelstart()
 	end
 	local roomIdx = oPlayer:getRoom()
 	local roomManager = skynet.uniqueservice("roommanager")
-	skynet.call(roomManager, "lua", "quitRoom", client_fd, playerId, roomIdx)
-	oPlayer:setRoom(0)
-	oPlayer:setState(0)
-	return {errcode = 0}
+	local err = skynet.call(roomManager, "lua", "quitRoom", client_fd, playerId, roomIdx)
+	if err == 0 then 
+		oPlayer:setRoom(0)
+		oPlayer:setState(0)
+	end
+	return {errcode = err}
 end
 
 -- 准备
@@ -81,10 +83,12 @@ function REQUEST:ready()
 	elseif oPlayer:getState() == 2 then 
 		return {errcode = 7} -- 准备中
 	end
-	oPlayer:setState(2)
 	local roomIdx = oPlayer:getRoom()
 	local roomManager = skynet.uniqueservice("roommanager")
 	local err = skynet.call(roomManager, "lua", "changeState", client_fd, playerId, roomIdx, 2)
+	if err == 0 then 
+		oPlayer:setState(2)
+	end
 	return {errcode = err}
 end
 
@@ -97,10 +101,12 @@ function REQUEST:cancelready()
 	elseif oPlayer:getState() == 1 then 
 		return {errcode = 12} -- 未准备
 	end
-	oPlayer:setState(1)
 	local roomIdx = oPlayer:getRoom()
 	local roomManager = skynet.uniqueservice("roommanager")
 	local err = skynet.call(roomManager, "lua", "changeState", client_fd, playerId, roomIdx, 1)
+	if err == 0 then 
+		oPlayer:setState(1)
+	end
 	return {errcode = err}
 end
 
@@ -164,30 +170,7 @@ function CMD.start(conf)
 	send_request = host:attach(sprotoloader.load(2))
 	skynet.fork(function()
 		while true do
-			-- local t = {
-			-- 	{
-			-- 		card = {
-			-- 			[1] = 11,
-			-- 			[2] = 8,
-			-- 			[3] = 9,
-			-- 			[4] = 6,
-			-- 			[5] = 14,
-			-- 		},
-			-- 		type = 1,
-			-- 	},
-			-- 	{
-			-- 		card = {
-			-- 			[1] = 15,
-			-- 			[2] = 3,
-			-- 			[3] = 11,
-			-- 			[4] = 7,
-			-- 			[5] = 4,
-			-- 		},
-			-- 		type = 2,
-			-- 	},
-			-- }
-			-- local t = {[1]=1,[2]=2}
-			-- send_package(send_request("handcard", {dizhu=t}))
+			send_package(send_request("heartbeat", {servertimer=os.time()}))
 			skynet.sleep(500)
 		end
 	end)

@@ -7,6 +7,7 @@ local skynet = require("skynet")
 local socket = require "skynet.socket"
 local sprotoloader = require "sprotoloader"
 local makecard = require("makecards")
+local callHolder = require("calllandholder")
 require("track")
 
 local host = sprotoloader.load(1):host("package")
@@ -28,17 +29,19 @@ local isNew = true -- 是否新建
 -- 游戏进行中变量
 local playerCard = {} -- 玩家牌，key：seat
 local dizhuCard = {} -- 地主牌
+
+-- 抢地主相关变量
 local callpriority = 0 -- 当前抢地主的权利
 local dizhuSeat = 0 -- 地主
 
+------------------------------------------
+-- 分发数据相关：start
+------------------------------------------
 local function send_package(fd, pack)
 	local package = string.pack(">s2", pack)
 	socket.write(fd, package)
 end
 
-------------------------------------------
--- 分发数据相关：start
-------------------------------------------
 -- 分发数据：name-协议名，msg-内容
 local function dispatchMessage(fd, name, msg)
 	if not bRunning then 
@@ -70,17 +73,37 @@ local function handOutCard()
 			dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
 				otherplayer_1 = 13, otherplayer_2 = 13})
 		end
-		skynet.sleep(1000)
-		local ran = math.random(1,3)
-		callpriority = ran
-		dispatchAllPlayer("callpriority", {priority = ran, time = 20})
 	end)
 end
 
 -- 抢地主逻辑
-local function callLandHolder()
-
+local function callLandHolder(seat, bCall)
+	assert(seat == callpriority, "位置出错")
+	dizhuSeat, callpriority = callHolder.callLandHolder(seat, bCall)
+	dispatchAllPlayer("callholder", {result = bCall, nextcall = callpriority})
+	if callpriority == 0 then -- 抢地主结束
+		return 
+	end
+	local endTime = os.time()+20
+	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
+	checkLandHolder(endTime, callpriority)
 end
+
+-- 检测抢地主（时间限制内没回协议默认不抢）
+local function checkLandHolder(endTime, seat)
+	skynet.fork(function()
+		while true do
+			if seat ~= callpriority then 
+				return 
+			end 
+			if os.time() >= endTime then 
+				callLandHolder(seat, false)
+				return 
+			end
+			skynet.sleep(500)
+		end
+	end)
+end 
 ------------------------------------------
 -- 游戏主体逻辑：end
 ------------------------------------------
@@ -92,7 +115,14 @@ function startGame()
 	-- 发牌
 	handOutCard()
 	-- 选地主
-
+	skynet.fork(function()
+		skynet.sleep(1000)
+		local ran = math.random(1,3)
+		callpriority = ran
+		local endTime = os.time()+20
+		dispatchAllPlayer("callpriority", {priority = ran, time = endTime})
+		checkLandHolder(endTime, callpriority)
+	end)
 
 end
  
@@ -103,6 +133,15 @@ function endGame()
 	dizhuCard = {}
 	dizhuSeat = 0
 	setState(1)
+	callHolder.reset()
+end
+
+local function getSeatById(id)
+	for seat, v in pairs(player) do
+		if v == id then 
+			return seat
+		end
+	end
 end
 
 local function getSeat()
@@ -185,7 +224,7 @@ function CMD.removePlayer(fd, id)
 			if not bRunning then -- 游戏中不清空player，用于断线重连
 				player[seat] = nil
 			end
-			return true
+			return 0
 		end
 	end
 	error("player not found!")
@@ -209,7 +248,11 @@ function CMD.calllandholder(fd, id, bCall)
 	if not bRunning then 
 		return 13
 	end
-	callLandHolder(fd, id, bCall)
+	local seat = getSeatById(id)
+	if callpriority ~= seat then 
+		return 14
+	end
+	callLandHolder(seat, bCall)
 end
 
 skynet.start(function()

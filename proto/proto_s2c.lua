@@ -7,7 +7,11 @@ local s2c = [[
     session 1 : integer
 }
 
-heartbeat 1 {}
+heartbeat 1 {
+	request {
+		servertimer 0 : integer
+	}
+}
 
 .card {
 	card 0 : *integer
@@ -27,6 +31,13 @@ callpriority 3 {
 	request {
 		priority 0 : integer
 		time 1 : integer
+	}
+}
+
+callholder {
+	request {
+		result 0 : boolean
+		nextcall 1 : integer
 	}
 }
 
