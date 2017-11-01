@@ -48,6 +48,9 @@ calllandholder 7 {
     request {
         call 0 : boolean
     }
+    response {
+        errcode 0 : integer
+    }
 }
 
 ]]
