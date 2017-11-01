@@ -16,6 +16,7 @@ local send_request = host:attach(sprotoloader.load(2))
 local startGame
 local endGame
 local setState
+local checkLandHolder
 
 -- 房间变量
 local CMD = {}
@@ -80,35 +81,40 @@ end
 local function callLandHolder(seat, bCall)
 	if seat ~= callpriority then 
 		print(">>>>>>>>>>>>>>位置出错")
-		return 
+		return 15
 	end
 	dizhuSeat, callpriority = callHolder.callLandHolder(seat, bCall)
+	print(">>>>>>>>>地主，当前优先级：", dizhuSeat, callpriority)
 	dispatchAllPlayer("callholder", {result = bCall, nextcall = callpriority})
 	if callpriority == 0 then -- 抢地主结束
 		dispatchAllPlayer("landholder", {landholder = dizhuSeat})
+		print(">>>>>>>>>>>>>>叫地主结束：", dizhuSeat)
 		-- 准备出牌
-		return 
+		return 0
 	elseif callpriority == -1 then -- 没人抢
 		playerCard = {}
 		dizhuCard = {}
 		dizhuSeat = 0
 		callHolder.reset()
 		startGame()
-		return 
+		return 0
 	end
 	local endTime = os.time()+20
 	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
 	checkLandHolder(endTime+1, callpriority) -- 延迟1s
+	return 0
 end
 
 -- 检测抢地主（时间限制内没回协议默认不抢）
-local function checkLandHolder(endTime, seat)
+function checkLandHolder(endTime, seat)
 	skynet.fork(function()
 		while true do
 			if seat ~= callpriority then 
+				print(">>>>>>>>>结束抢地主倒计时")
 				return 
 			end 
 			if os.time() >= endTime then 
+				print(">>>>>>>>>>>>时间到，自动不抢：", seat)
 				callLandHolder(seat, false)
 				return 
 			end
@@ -133,6 +139,7 @@ function startGame()
 		callpriority = ran
 		local endTime = os.time()+20
 		dispatchAllPlayer("callpriority", {priority = ran, time = endTime})
+		print("--------->>开始叫地主：", callpriority)
 		checkLandHolder(endTime, callpriority)
 	end)
 
@@ -264,7 +271,8 @@ function CMD.calllandholder(fd, id, bCall)
 	if callpriority ~= seat then 
 		return 14
 	end
-	callLandHolder(seat, bCall)
+	print("++++++++++叫地主或抢地主：", id, bCall)
+	return callLandHolder(seat, bCall)
 end
 
 skynet.start(function()
@@ -287,7 +295,7 @@ local function checkStartGame()
 					startGame()
 				end
 			end
-			skynet.sleep(1000)
+			skynet.sleep(500)
 		end
 	end)
 end

@@ -80,7 +80,6 @@ function CMD.calllandholder(fd, id, idx, bCall)
 	if not rm then 
 		return 8
 	end	
-	print("++++++++++叫地主或抢地主：", id, bCall)
 	return skynet.call(rm, "lua", "calllandholder", fd, id, bCall)
 end
 
