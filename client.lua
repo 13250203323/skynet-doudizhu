@@ -126,14 +126,18 @@ while true do
 			send_request("login", {id="jean", passwork="jean"})
 		elseif cmd == "6" then 
 			send_request("login", {id="dabiaoge", passwork="dabiaoge"})
-		elseif cmd == "11" then 
+		elseif cmd == "11" then -- 快速开始
 			send_request("quickstart")
-		elseif cmd == "21" then 
+		elseif cmd == "21" then -- 准备
 			send_request("ready")
-		elseif cmd == "22" then 
+		elseif cmd == "22" then -- 取消准备
 			send_request("cancelready")
-		elseif cmd == "12" then 
+		elseif cmd == "12" then -- 取消开始
 			send_request("cancelstart")
+		elseif cmd == "100" then -- 叫地主
+			send_request("calllandholder", {call = true})
+		elseif cmd == "101" then -- 不叫
+			send_request("calllandholder", {call = false})
 		end
 	else
 		socket.usleep(100)

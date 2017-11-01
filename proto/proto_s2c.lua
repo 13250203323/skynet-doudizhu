@@ -34,10 +34,16 @@ callpriority 3 {
 	}
 }
 
-callholder {
+callholder 4 {
 	request {
 		result 0 : boolean
 		nextcall 1 : integer
+	}
+}
+
+landholder 5 {
+	request {
+		landholder 0 : integer
 	}
 }
 

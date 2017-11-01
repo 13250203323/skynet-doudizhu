@@ -78,15 +78,27 @@ end
 
 -- 抢地主逻辑
 local function callLandHolder(seat, bCall)
-	assert(seat == callpriority, "位置出错")
+	if seat ~= callpriority then 
+		print(">>>>>>>>>>>>>>位置出错")
+		return 
+	end
 	dizhuSeat, callpriority = callHolder.callLandHolder(seat, bCall)
 	dispatchAllPlayer("callholder", {result = bCall, nextcall = callpriority})
 	if callpriority == 0 then -- 抢地主结束
+		dispatchAllPlayer("landholder", {landholder = dizhuSeat})
+		-- 准备出牌
+		return 
+	elseif callpriority == -1 then -- 没人抢
+		playerCard = {}
+		dizhuCard = {}
+		dizhuSeat = 0
+		callHolder.reset()
+		startGame()
 		return 
 	end
 	local endTime = os.time()+20
 	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
-	checkLandHolder(endTime, callpriority)
+	checkLandHolder(endTime+1, callpriority) -- 延迟1s
 end
 
 -- 检测抢地主（时间限制内没回协议默认不抢）
