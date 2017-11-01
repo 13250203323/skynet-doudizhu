@@ -169,10 +169,10 @@ function CMD.start(conf)
 	host = sprotoloader.load(1):host "package"
 	send_request = host:attach(sprotoloader.load(2))
 	skynet.fork(function()
-		while true do
-			send_package(send_request("heartbeat", {servertimer=os.time()}))
-			skynet.sleep(500)
-		end
+		-- while true do
+		-- 	send_package(send_request("heartbeat", {servertimer=os.time()}))
+		-- 	skynet.sleep(1000)
+		-- end
 	end)
 
 	client_fd = fd
