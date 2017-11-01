@@ -13,12 +13,14 @@ local bLastCall = false
 local function getNextSeat(seat)
 	if table.nums(dizhu) <= 0 then -- 3个都不抢
 		return -1 
+	elseif firstCall ~= 0 and table.nums(dizhu) == 1 then -- 结束
+		return 0
 	end
 	if bLastCall then 
 		return 0
 	end
 	while true do 
-		local seat = seat == 3 and 1 or (seat + 1)
+		seat = seat == 3 and 1 or (seat + 1)
 		local nextSeat = dizhu[seat]
 		bLastCall = firstCall == seat and true or false
 		if nextSeat then 
