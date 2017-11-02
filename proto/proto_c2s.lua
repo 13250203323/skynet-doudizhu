@@ -7,6 +7,11 @@ local c2s = [[
     session 1 : integer
 }
 
+.card {
+    card 0 : *integer
+    type 1 : integer
+}
+
 quit 1 {}
 
 login 2 {

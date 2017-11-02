@@ -8,6 +8,7 @@ local socket = require "skynet.socket"
 local sprotoloader = require "sprotoloader"
 local makecard = require("makecards")
 local callHolder = require("calllandholder")
+local handout = require("handoutcard")
 require("track")
 
 local host = sprotoloader.load(1):host("package")
@@ -34,6 +35,9 @@ local dizhuCard = {} -- 地主牌
 -- 抢地主相关变量
 local callpriority = 0 -- 当前抢地主的权利
 local dizhuSeat = 0 -- 地主
+
+-- 出牌的变量
+local handCardPriority = 0 -- 当前出牌的权利
 
 ------------------------------------------
 -- 分发数据相关：start
@@ -71,7 +75,7 @@ local function handOutCard()
 	print(dump(dizhuCard))
 	skynet.fork(function()
 		for seat, fd in pairs(client) do
-			dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
+			dispatchMessage(fd, "handcard", {myCard = playerCard[seat], 
 				otherplayer_1 = 13, otherplayer_2 = 13})
 		end
 	end)
@@ -84,11 +88,12 @@ local function callLandHolder(seat, bCall)
 		return 15
 	end
 	dizhuSeat, callpriority = callHolder.callLandHolder(seat, bCall)
-	print(">>>>>>>>>地主，当前优先级：", dizhuSeat, callpriority)
 	dispatchAllPlayer("callholder", {result = bCall, nextcall = callpriority})
 	if callpriority == 0 then -- 抢地主结束
-		dispatchAllPlayer("landholder", {landholder = dizhuSeat})
+		dispatchAllPlayer("landholder", {dizhu = dizhuCard, landholder = dizhuSeat})
 		print(">>>>>>>>>>>>>>叫地主结束：", dizhuSeat)
+		handCardPriority = dizhuSeat
+		handout.init(playerCard, dizhuCard, dizhuSeat)
 		-- 准备出牌
 		return 0
 	elseif callpriority == -1 then -- 没人抢
@@ -96,12 +101,13 @@ local function callLandHolder(seat, bCall)
 		dizhuCard = {}
 		dizhuSeat = 0
 		callHolder.reset()
+		handout.reset()
 		startGame()
 		return 0
 	end
 	local endTime = os.time()+20
 	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
-	checkLandHolder(endTime+1, callpriority) -- 延迟1s
+	checkLandHolder(endTime, callpriority) -- 延迟1s
 	return 0
 end
 
@@ -153,6 +159,7 @@ function endGame()
 	dizhuSeat = 0
 	setState(1)
 	callHolder.reset()
+	handout.reset()
 end
 
 local function getSeatById(id)
@@ -216,8 +223,9 @@ function CMD.addPlayer(fd, id, idx)
 		if client_id == id then 
 			client[seat] = fd
 			if bRunning then -- 在游戏中，发送相关信息
-				dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
-					otherplayer_1 = 13, otherplayer_2 = 13})
+				-- ①再打牌中，②抢地主状态
+				-- dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
+				-- 	otherplayer_1 = 13, otherplayer_2 = 13})
 			end
 			return true
 		end

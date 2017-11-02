@@ -20,7 +20,6 @@ heartbeat 1 {
 
 handcard 2 {
 	request {
-		dizhu 0 : *card
 		myCard 1 : *card
 		otherplayer_1 2 : integer
 		otherplayer_2 3 : integer
@@ -43,6 +42,7 @@ callholder 4 {
 
 landholder 5 {
 	request {
+		dizhu 0 : *card
 		landholder 0 : integer
 	}
 }
