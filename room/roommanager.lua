@@ -83,6 +83,15 @@ function CMD.calllandholder(fd, id, idx, bCall)
 	return skynet.call(rm, "lua", "calllandholder", fd, id, bCall)
 end
 
+-- 出牌
+function CMD.followcard(fd, id, idx, card, handType)
+	local rm = room[idx]
+	if not rm then 
+		return 8
+	end	
+	return skynet.call(rm, "lua", "followcard", fd, id, card, handType)
+end
+
 skynet.start(function()
 	skynet.dispatch("lua", function(session, source, cmd, subcmd, ...)
 		local f = assert(CMD[cmd])

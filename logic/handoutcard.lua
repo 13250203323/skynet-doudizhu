@@ -6,23 +6,12 @@
 require("track")
 require("define")
 local mod = {}
+local handout = {}
 
-local playerCard_1 = {} -- seat:1
-local playerCard_2 = {} -- seat:2
-local playerCard_3 = {} -- seat:3
+local allPlayerCard = {} -- 玩家牌{seat:{type:{icard}}}
 local dizhuCard = {} -- 地主牌
-
--- HANDOUT_DANGE = 100  		-- 单个
--- HANDOUT_DUIZI = 101  		-- 对子
--- HANDOUT_SHUNZI = 102  		-- 顺子
--- HANDOUT_LIANDUI = 103  		-- 连对
--- HANDOUT_SANDAI_1 = 104  	-- 三带单
--- HANDOUT_SANDAI_2 = 105  	-- 三带对子
--- HANDOUT_FEIJI_1 = 106 		-- 飞机带单
--- HANDOUT_FEIJI_2 = 107  		-- 飞机带对子
--- HANDOUT_SIDAIER = 108  		-- 四带二
--- HANDOUT_ZHADAN = 109 		-- 炸弹
--- HANDOUT_HUOJIAN = 110  		-- 火箭
+local lastHandOut = {} -- 上一手打的牌
+local lastHandOutType = 0 -- 上一手打的牌类型
 
 -- card：必须为数组
 local function getSameTypeCard(card, iType)
@@ -35,33 +24,158 @@ local function getSameTypeCard(card, iType)
 	return #card+1, data
 end
 
--- 合并类型相同的数组，data_2合并到data_1
-local function combineCard(data_1, data_2)
-	assert(data_1.type == data_2.type, "合并类型出错!")
-	for _, iCard in pairs(data_2.card) do
-		table.insert(data_1.card, iCard)
+-- 从data_1中移除掉data_2中相同的数据
+local function uniqueCard(data_1, data_2)
+	for iType, dout in ipairs(data_2) do
+		for _, val in ipairs(dout) do
+			for idx, iCard in ipairs(data_1[iType]) do
+				if val == iCard then 
+					table.remove(data_1[iType], idx)
+				end
+			end
+		end
 	end
 	return data_1
 end
 
+-- 检查是否胜利
+local function checkisWin(pC)
+	for _, data in ipairs(pC) do
+		if #data > 0 then 
+			return false
+		end
+	end
+	return true
+end
+
+-- 单个
+handout[HANDOUT_DANGE] = function()
+
+end
+
+-- 对子
+handout[HANDOUT_DUIZI] = function()
+
+end
+
+-- 顺子
+handout[HANDOUT_SHUNZI] = function()
+
+end
+
+-- 连对
+handout[HANDOUT_LIANDUI] = function()
+
+end
+
+-- 三带单
+handout[HANDOUT_SANDAI_1] = function()
+
+end
+
+-- 三带一对
+handout[HANDOUT_SANDAI_2] = function()
+
+end
+
+-- 飞机带单
+handout[HANDOUT_FEIJI_1] = function()
+
+end
+
+-- 飞机带对子
+handout[HANDOUT_FEIJI_2] = function()
+
+end
+
+-- 四带二
+handout[HANDOUT_SIDAIER] = function()
+
+end
+
+-- 炸弹
+handout[HANDOUT_ZHADAN] = function()
+
+end
+
+-- 火箭
+handout[HANDOUT_HUOJIAN] = function()
+
+end
+
 function mod.init(playerCard, diCard, dizhuSeat)
 	dizhuCard = diCard
-	for _, data in pairs(diCard) do
-		local iType = data.type
-		local index, data_1 = getSameTypeCard(playerCard[dizhuSeat], iType)
-		local result = combineCard(data_1, data)
-		playerCard[dizhuSeat][index] = result
+
+	-- 转换格式
+	for seat, data in ipairs(playerCard) do
+		local card = {}
+		for _, dCard in ipairs(data) do
+			local iType = dCard.type
+			if not card[iType] then 
+				card[iType] = {}
+			end
+			for _, iCard in ipairs(dCard["card"]) do
+				table.insert(card[iType], iCard)
+			end
+			table.sort(card[iType], function(A, B)
+				return A < B
+			end)
+		end		
+		allPlayerCard[seat] = card
 	end
-	playerCard_1 = playerCard[1]
-	playerCard_2 = playerCard[2]
-	playerCard_3 = playerCard[3]
+
+	-- 合并地主牌
+	for _, data in ipairs(diCard) do
+		local iType = data.type
+		local card = allPlayerCard[dizhuSeat][iType] or {}
+		for _, iCard in ipairs(data["card"]) do
+			table.insert(card, iCard)
+		end
+		table.sort(card, function(A, B)
+			return A < B
+		end)
+		allPlayerCard[dizhuSeat][iType] = card
+	end
 end
 
 function mod.reset()
-	playerCard_1 = {}
-	playerCard_2 = {}
-	playerCard_3 = {}
+	allPlayerCard = {}
 	dizhuCard = {}
+	lastHandOut = {}
+	lastHandOutType = 0
+end
+
+-- 下一出牌玩家
+function mod.getNexSeat(seat)
+	seat = seat == 3 and 1 or (seat + 1)
+	return seat
+end
+
+-- 自动选一个单牌出
+function mod.handCardAuto(seat)
+	local card = allPlayerCard[seat]
+	local iMinCard, iType, index_1, index_2
+	for idx, data in ipairs(card) do
+		if not iMinCard or iMinCard > data[1] then 
+			iMinCard = data[1]
+			iType = idx
+		end
+	end
+	assert(iMinCard and iType, "handCardAuto error")
+	table.remove(allPlayerCard[seat][iType], 1)
+	local isWin = checkisWin(allPlayerCard[seat])
+	local result = {[1]={["card"]=iMinCard,["type"]=iType}}
+	lastHandOut = {[iType] = {[1]=iMinCard}}
+	lastHandOutType = HANDOUT_DANGE
+	return result, HANDOUT_DANGE, isWin
+end
+
+-- 跟牌
+function mod.followCard(seat, card, handType, isFollow)
+	local errorcode = handout[handType](card)
+	if not isFollow then 
+		return errorcode
+	end
 end
 
 ----------------------------------------
@@ -71,7 +185,7 @@ local pCard = {
 	[1] = {
 		[1] = {
 			["card"] = {
-				[1] = 3,
+				[1] = 13,
 				[2] = 4,
 				[3] = 5,
 			},
@@ -79,17 +193,17 @@ local pCard = {
 		},
 		[2] = {
 			["card"] = {
-				[1] = 5,
+				[1] = 15,
 				[2] = 8,
-				[3] = 10,
+				[3] = 3,
 			},
 			["type"] = 2,
 		},
 		[3] = {
 			["card"] = {
-				[1] = 13,
+				[1] = 15,
 				[2] = 14,
-				[3] = 15,
+				[3] = 7,
 			},
 			["type"] = 3,
 		},
@@ -113,6 +227,8 @@ local dizhu = {
 }
 
 mod.init(pCard, dizhu, 1)
-print(dump(playerCard_1))
+print(dump(allPlayerCard))
+mod.handCardAuto(1)
+print(dump(allPlayerCard))
 
 return mod

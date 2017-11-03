@@ -47,11 +47,40 @@ landholder 5 {
 	}
 }
 
+followcard 6 {
+    request {
+        card 0 : *card
+        handtype 1 : integer    
+        seat 2 : integer
+    }
+}
+
+passfollow 7 {
+	request {
+		seat 0 : integer
+	}
+}
+
+handoutpriority 8 {
+	request {
+		priority 0 : integer
+		time 1 : integer
+	}
+}
+
+gameover 9 {
+	request {
+		win 0 : integer
+	}
+}
+
 ]]
 
 --[[
 1-handcard：发牌
 2-callpriority：叫地主或者抢地主权利
+3-followcard：出牌，handtype-出牌类型，seat-座位
+4-passfollow：不跟
 ]]
 
 return s2c

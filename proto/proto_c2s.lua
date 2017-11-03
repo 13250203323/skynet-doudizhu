@@ -58,6 +58,25 @@ calllandholder 7 {
     }
 }
 
+followcard 8 {
+    request {
+        card 0 : *card
+        handtype 1 : integer    
+    }
+    response {
+        errcode 0 : integer
+    }
+}
+
+passfollow 9 {
+    request {
+        seat 0 : integer
+    }
+    response {
+        errcode 0 : integer
+    }
+}
+
 ]]
 
 --[[
@@ -66,5 +85,7 @@ calllandholder 7 {
 3-cancelready：取消准备
 4-cancelstart：取消开始
 5-calllandholder：是否叫地主或者抢地主
+6-handoutcard：出牌，handtype-出牌类型
+7-passfollow：不跟
 ]]
 return c2s

@@ -18,6 +18,7 @@ local startGame
 local endGame
 local setState
 local checkLandHolder
+local checkFollowCard
 
 -- 房间变量
 local CMD = {}
@@ -27,6 +28,8 @@ local state = {} -- 状态集合：1-未准备，2-准备，3-游戏中
 local bRunning = false
 local index = 0 -- 房号
 local isNew = true -- 是否新建
+local callTime = 20 -- 叫地主时间限制
+local handTime = 20 -- 出牌时间限制
 
 -- 游戏进行中变量
 local playerCard = {} -- 玩家牌，key：seat
@@ -38,6 +41,7 @@ local dizhuSeat = 0 -- 地主
 
 -- 出牌的变量
 local handCardPriority = 0 -- 当前出牌的权利
+local lasthandPriority = 0 -- 上一个出牌权利
 
 ------------------------------------------
 -- 分发数据相关：start
@@ -95,6 +99,9 @@ local function callLandHolder(seat, bCall)
 		handCardPriority = dizhuSeat
 		handout.init(playerCard, dizhuCard, dizhuSeat)
 		-- 准备出牌
+		local endTime = os.time() + handTime
+		checkFollowCard(endTime, dizhuSeat)
+		dispatchAllPlayer("handoutpriority", {time = endTime, priority = dizhuSeat})
 		return 0
 	elseif callpriority == -1 then -- 没人抢
 		playerCard = {}
@@ -105,7 +112,7 @@ local function callLandHolder(seat, bCall)
 		startGame()
 		return 0
 	end
-	local endTime = os.time()+20
+	local endTime = os.time() + callTime
 	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
 	checkLandHolder(endTime, callpriority) -- 延迟1s
 	return 0
@@ -128,6 +135,45 @@ function checkLandHolder(endTime, seat)
 		end
 	end)
 end 
+
+-- 出牌、跟牌逻辑
+local function followCard(seat, card, handType)
+	if seat ~= handCardPriority then 
+		print(">>>>>>>>>>>>>>出牌位置出错")
+		return 16
+	end
+	local isFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and false or true
+	mod.followCard(seat, card, handType, isFollow)
+end
+
+-- 检测出牌（时间限制内没回协议默认不跟牌、出牌只出一个单）
+function checkFollowCard(endTime, seat)
+	skynet.fork(function()
+		while true do
+			if seat ~= handCardPriority then 
+				print(">>>>>>>>>结束出牌倒计时")
+				return 
+			end 
+			if os.time() >= endTime then 
+				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat)
+				-- isFollow: true-跟牌，false-出牌
+				local isFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and false or true
+				if isFollow then -- 直接不出
+					dispatchAllPlayer("passfollow", {seat = seat})
+				else
+					local card, iType, isWin = handout.handCardAuto(seat)
+					dispatchAllPlayer("followcard", {card = card, type = iType, seat = seat})
+					if isWin then -- 游戏结束
+						dispatchAllPlayer("gameover", {win = seat})
+						endGame()
+					end
+				end
+				return 
+			end
+			skynet.sleep(500)
+		end
+	end)
+end
 ------------------------------------------
 -- 游戏主体逻辑：end
 ------------------------------------------
@@ -143,7 +189,7 @@ function startGame()
 		skynet.sleep(1000)
 		local ran = math.random(1,3)
 		callpriority = ran
-		local endTime = os.time()+20
+		local endTime = os.time() + callTime
 		dispatchAllPlayer("callpriority", {priority = ran, time = endTime})
 		print("--------->>开始叫地主：", callpriority)
 		checkLandHolder(endTime, callpriority)
@@ -158,6 +204,10 @@ function endGame()
 	dizhuCard = {}
 	dizhuSeat = 0
 	setState(1)
+	callpriority = 0
+	dizhuSeat = 0
+	handCardPriority = 0
+	lasthandPriority = 0
 	callHolder.reset()
 	handout.reset()
 end
@@ -281,6 +331,17 @@ function CMD.calllandholder(fd, id, bCall)
 	end
 	print("++++++++++叫地主或抢地主：", id, bCall)
 	return callLandHolder(seat, bCall)
+end
+
+function CMD.followcard(fd, id, card, handType)
+	if not bRunning then 
+		return 13
+	end
+	local seat = getSeatById(id)
+	if handCardPriority ~= seat then 
+		return 14
+	end
+	return followCard(seat, card, handType)
 end
 
 skynet.start(function()
