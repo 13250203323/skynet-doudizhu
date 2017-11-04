@@ -43,15 +43,16 @@ callholder 4 {
 landholder 5 {
 	request {
 		dizhu 0 : *card
-		landholder 0 : integer
+		landholder 1 : integer
 	}
 }
 
 followcard 6 {
     request {
-        card 0 : *card
+        fwcard 0 : *card
         handtype 1 : integer    
         seat 2 : integer
+        leftcard 3: integer
     }
 }
 
@@ -79,7 +80,7 @@ gameover 9 {
 --[[
 1-handcard：发牌
 2-callpriority：叫地主或者抢地主权利
-3-followcard：出牌，handtype-出牌类型，seat-座位
+3-followcard：出牌，handtype-出牌类型，seat-座位，leftcard-剩余数量
 4-passfollow：不跟
 ]]
 

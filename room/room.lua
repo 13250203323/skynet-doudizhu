@@ -114,7 +114,7 @@ local function callLandHolder(seat, bCall)
 	end
 	local endTime = os.time() + callTime
 	dispatchAllPlayer("callpriority", {priority = callpriority, time = endTime})
-	checkLandHolder(endTime, callpriority) -- 延迟1s
+	checkLandHolder(endTime, callpriority)
 	return 0
 end
 
@@ -142,8 +142,8 @@ local function followCard(seat, card, handType)
 		print(">>>>>>>>>>>>>>出牌位置出错")
 		return 16
 	end
-	local isFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and false or true
-	mod.followCard(seat, card, handType, isFollow)
+	local isNotFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
+	handout.followCard(seat, card, handType, isNotFollow)
 end
 
 -- 检测出牌（时间限制内没回协议默认不跟牌、出牌只出一个单）
@@ -155,14 +155,14 @@ function checkFollowCard(endTime, seat)
 				return 
 			end 
 			if os.time() >= endTime then 
-				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat)
-				-- isFollow: true-跟牌，false-出牌
-				local isFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and false or true
-				if isFollow then -- 直接不出
+				-- isNotFollow: true-跟牌，false-出牌
+				local isNotFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
+				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isNotFollow)
+				if not isNotFollow then -- 直接不出
 					dispatchAllPlayer("passfollow", {seat = seat})
 				else
-					local card, iType, isWin = handout.handCardAuto(seat)
-					dispatchAllPlayer("followcard", {card = card, type = iType, seat = seat})
+					local card, iType, leftNums, isWin = handout.handCardAuto(seat)
+					dispatchAllPlayer("followcard", {fwcard = card, type = iType, seat = seat, leftcard = leftNums})
 					if isWin then -- 游戏结束
 						dispatchAllPlayer("gameover", {win = seat})
 						endGame()

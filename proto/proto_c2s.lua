@@ -7,11 +7,6 @@ local c2s = [[
     session 1 : integer
 }
 
-.card {
-    card 0 : *integer
-    type 1 : integer
-}
-
 quit 1 {}
 
 login 2 {
@@ -58,9 +53,14 @@ calllandholder 7 {
     }
 }
 
+.card {
+    card 0 : *integer
+    type 1 : integer
+}
+
 followcard 8 {
     request {
-        card 0 : *card
+        fwcard 0 : *card
         handtype 1 : integer    
     }
     response {
@@ -85,7 +85,7 @@ passfollow 9 {
 3-cancelready：取消准备
 4-cancelstart：取消开始
 5-calllandholder：是否叫地主或者抢地主
-6-handoutcard：出牌，handtype-出牌类型
+6-followcard：出牌，handtype-出牌类型
 7-passfollow：不跟
 ]]
 return c2s
