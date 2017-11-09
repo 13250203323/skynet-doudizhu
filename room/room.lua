@@ -142,8 +142,20 @@ local function followCard(seat, card, handType)
 		print(">>>>>>>>>>>>>>出牌位置出错")
 		return 16
 	end
-	local isNotFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
-	handout.followCard(seat, card, handType, isNotFollow)
+	local isHandOut = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
+	local errorcode, leftNums, isWin = handout.followCard(seat, card, handType, isHandOut)
+	skynet.fork(function()
+		if errorcode ~= 0 then 
+			return 
+		end
+		skynet.sleep(500)
+		dispatchAllPlayer("followcard", {fwcard = card, handtype = handType, seat = seat, leftcard = leftNums})
+		if isWin then -- 游戏结束
+			dispatchAllPlayer("gameover", {win = seat})
+			endGame()
+		end
+	end)
+	return errorcode
 end
 
 -- 检测出牌（时间限制内没回协议默认不跟牌、出牌只出一个单）
@@ -156,9 +168,9 @@ function checkFollowCard(endTime, seat)
 			end 
 			if os.time() >= endTime then 
 				-- isNotFollow: true-跟牌，false-出牌
-				local isNotFollow = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
-				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isNotFollow)
-				if not isNotFollow then -- 直接不出
+				local isHandOut = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
+				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isHandOut)
+				if not isHandOut then -- 直接不出
 					dispatchAllPlayer("passfollow", {seat = seat})
 				else
 					local card, iType, leftNums, isWin = handout.handCardAuto(seat)

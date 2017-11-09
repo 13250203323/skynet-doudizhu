@@ -14,19 +14,19 @@ local lastHandOut = {} -- 上一手打的牌
 local lastHandOutType = 0 -- 上一手打的牌类型
 
 -- 从data_1中移除掉data_2中相同的数据
--- local function uniqueCard(data_1, data_2)
--- 	for iType, dout in pairs(data_2) do
--- 		for _, val in ipairs(dout) do
--- 			assert(data_1[iType], "牌型出错")
--- 			for idx, iCard in ipairs(data_1[iType]) do
--- 				if val == iCard then 
--- 					table.remove(data_1[iType], idx)
--- 				end
--- 			end
--- 		end
--- 	end
--- 	return data_1
--- end
+local function removeSameCard(data_1, data_2)
+	for iType, dout in pairs(data_2) do
+		for _, val in ipairs(dout) do
+			assert(data_1[iType], "牌型出错")
+			for idx, iCard in ipairs(data_1[iType]) do
+				if val == iCard then 
+					table.remove(data_1[iType], idx)
+				end
+			end
+		end
+	end
+	return data_1
+end
 
 -- 检查是否胜利
 local function checkisWin(pC)
@@ -398,7 +398,12 @@ function mod.followCard(seat, netCard, handType, isHandOut)
 	local errorcode = handout[handType](seat, card, isHandOut)
 	lastHandOut = errorcode == 0 and card or lastHandOut
 	lastHandOutType = errorcode == 0 and handType or lastHandOutType
-	return errorcode
+	if errorcode == 0 then 
+		allPlayerCard[seat] = removeSameCard(allPlayerCard[seat], card)
+	end
+	local isWin = checkisWin(allPlayerCard[seat], netCard)
+	local nums = getCardNums(allPlayerCard[seat])
+	return errorcode, nums, isWin
 end
 
 ----------------------------------------
@@ -459,13 +464,6 @@ local pCard = {
 			},
 			["type"] = 4,
 		},
-		[5] = {
-			["card"] = {
-				[1] = 16,
-				[2] = 17,
-			},
-			["type"] = 5,
-		},
 	},
 }
 
@@ -484,11 +482,6 @@ local dizhu = {
 		["type"] = 5,
 	},
 }
-
-mod.init(pCard, dizhu, 1)
--- print(dump(allPlayerCard))
--- mod.handCardAuto(1)
--- print(dump(allPlayerCard))
 
 local netCard = {
 	-- [1] = {
@@ -517,12 +510,20 @@ local netCard = {
 	-- },
 	[1] = {
 		["card"] = {
-			[1] = 16,
-			[2] = 17,
+			[1] = 3,
+			[2] = 9,
 		},
 		["type"] = 5,
 	},
 }
+
+mod.init(pCard, dizhu, 1)
+-- print(dump(allPlayerCard[1]))
+-- local card = changeCardStyle(netCard)
+-- print(dump(card))
+-- print(dump(removeSameCard(allPlayerCard[1], card)))
+]]
+--[[
 -- 出牌基本类型
 -- HANDOUT_DANGE = 100  		-- 单个
 -- HANDOUT_DUIZI = 101  		-- 对子
