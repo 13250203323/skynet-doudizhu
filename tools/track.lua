@@ -103,6 +103,19 @@ function table.keyof(hashtable, value)
     return nil
 end
 
+function table.getallkey(hashtable, value)
+    local key = {}
+    for k, v in pairs(hashtable) do
+        if v == value then 
+            table.insert(key, k)
+        end
+    end
+    table.sort(key, function(A, B)
+        return A < B
+    end)
+    return key    
+end
+
 function table.removebyvalue(array, value, removeall)
     local c, i, max = 0, 1, #array
     while i <= max do

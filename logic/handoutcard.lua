@@ -208,44 +208,131 @@ handout[HANDOUT_LIANDUI] = function(seat, card, isHandOut)
 	return errorcode
 end
 
+-- 3带1:iType-4, 3带2:iType-5
+local function check_31or32(seat, card, isHandOut, iType)
+	local nums_1, resultCard_1 = getCardAttr_1(card)
+	if nums_1 ~= iType then return 100 end
+	local handCard_1 = iType == 4 and table.keyof(resultCard_1, 1) or table.keyof(resultCard_1, 2)
+	local handCard_3 = table.keyof(resultCard_1, 3)
+	if not handCard_3 or handCard_3 >= 15 or not handCard_1 then return 100 end 
+
+	local errorcode = checkCard(allPlayerCard[seat], card)
+	if isHandOut or errorcode ~= 0 then 
+		return errorcode 
+	end 
+
+	local _, resultCard_2 = getCardAttr_1(lastHandOut)
+	local lasthandCard_3 = table.keyof(resultCard_2, 3)
+	if handCard_3 <= lasthandCard_3 then return 100 end
+	return errorcode
+end
+
 -- 三带单
 handout[HANDOUT_SANDAI_1] = function(seat, card, isHandOut)
 	if not isHandOut and lastHandOutType ~= HANDOUT_SANDAI_1 then return 100 end
-	local nums_1, resultCard_1 = getCardAttr_1(card)
-	if nums_1 ~= 4 then return 100 end
-
-
+	return check_31or32(seat, card, isHandOut, 4)
 end
 
 -- 三带一对
 handout[HANDOUT_SANDAI_2] = function(seat, card, isHandOut)
 	if not isHandOut and lastHandOutType ~= HANDOUT_SANDAI_2 then return 100 end
+	return check_31or32(seat, card, isHandOut, 5)
+end
 
+-- 飞机带单:iType-8, 飞机带双:iType-10
+local function check_331or332(seat, card, isHandOut, iType)
+	local nums_1, resultCard_1 = getCardAttr_1(card)
+	local dCard_1 = iType == 8 and table.getallkey(resultCard_1, 1) or table.getallkey(resultCard_1, 2)
+	local dCard_3 = table.getallkey(resultCard_1, 3)
+	if #dCard_3 <= 1 or #dCard_1 <= 1 or #dCard_3 ~= #dCard_1 then return 100 end
+	if iType == 8 then 
+		if (#dCard_3 * 3 + #dCard_1) ~= nums_1 then return 100 end
+	elseif iType == 10 then 
+		if (#dCard_3 * 3 + #dCard_1 * 2) ~= nums_1 then return 100 end
+	end
+	for i=1, #dCard_3 do
+		local p = dCard_3[i]
+		local q = dCard_3[i+1]
+		if not q then 
+			break
+		end
+		if (q ~= p + 1) or (p >= 15 or q >= 15) then 
+			return 100
+		end		
+	end
+	local errorcode = checkCard(allPlayerCard[seat], card)
+	if isHandOut or errorcode ~= 0 then 
+		return errorcode 
+	end 
+
+	local _, resultCard_2 = getCardAttr_1(lastHandOut)
+	local lasthandCard_3 = table.getallkey(resultCard_2, 3)
+	if #dCard_3 ~= #lasthandCard_3 then return 100 end
+	if dCard_3[1] <= lasthandCard_3[1] then return 100 end
+	return errorcode
 end
 
 -- 飞机带单
 handout[HANDOUT_FEIJI_1] = function(seat, card, isHandOut)
-
+	if not isHandOut and lastHandOutType ~= HANDOUT_FEIJI_1 then return 100 end
+	return check_331or332(seat, card, isHandOut, 8)
 end
 
 -- 飞机带对子
 handout[HANDOUT_FEIJI_2] = function(seat, card, isHandOut)
-
+	if not isHandOut and lastHandOutType ~= HANDOUT_FEIJI_2 then return 100 end
+	return check_331or332(seat, card, isHandOut, 10)
 end
 
 -- 四带二
 handout[HANDOUT_SIDAIER] = function(seat, card, isHandOut)
+	if not isHandOut and lastHandOutType ~= HANDOUT_SIDAIER then return 100 end
+	local nums_1, resultCard_1 = getCardAttr_1(card)
+	if nums_1 ~= 6 or not table.keyof(resultCard_1, 4) then return 100 end 
+	local dCard_1 = table.getallkey(resultCard_1, 1)
+	if #dCard_1 ~= 2 then return 100 end
 
+	local errorcode = checkCard(allPlayerCard[seat], card)
+	if isHandOut or errorcode ~= 0 then 
+		return errorcode 
+	end 
+
+	local dCard_3 = table.getallkey(resultCard_1, 3)
+	local _, resultCard_2 = getCardAttr_1(lastHandOut)
+	local lasthandCard_4 = table.getallkey(resultCard_2, 4)
+	if #dCard_3 ~= #lasthandCard_4 then return 100 end
+	if dCard_3[1] <= lasthandCard_3[1] then return 100 end	
+	return errorcode 
 end
 
 -- 炸弹
 handout[HANDOUT_ZHADAN] = function(seat, card, isHandOut)
+	local nums_1, resultCard_1 = getCardAttr_1(card)
+	if nums_1 ~= 4 or not table.keyof(resultCard_1, 4) then return 100 end
 
+	local errorcode = checkCard(allPlayerCard[seat], card)
+	if errorcode ~= 0 or lastHandOutType ~= HANDOUT_SIDAIER then 
+		return errorcode
+	end
+
+	local dCard_4 = table.getallkey(resultCard_1, 4)
+	local _, resultCard_2 = getCardAttr_1(lastHandOut)
+	local lasthandCard_4 = table.getallkey(resultCard_2, 4)
+	if #dCard_3 ~= #lasthandCard_4 then return 100 end
+	if dCard_4[1] <= lasthandCard_4[1] then return 100 end	
+	return errorcode 
 end
 
 -- 火箭
 handout[HANDOUT_HUOJIAN] = function(seat, card, isHandOut)
+	local nums_1, resultCard_1 = getCardAttr_1(card)
+	if nums_1 ~= 2 then return 100 end
+	if not resultCard_1[16] or not resultCard_1[17] then 
+		return 100
+	end
 
+	local errorcode = checkCard(allPlayerCard[seat], card)
+	return errorcode 
 end
 
 function mod.init(playerCard, diCard, dizhuSeat)
@@ -317,6 +404,7 @@ end
 ----------------------------------------
 -- for test
 ----------------------------------------
+--[[
 local pCard = {
 	[1] = {
 		[1] = {
@@ -325,6 +413,10 @@ local pCard = {
 				[2] = 5,
 				[3] = 6,
 				[4] = 7,
+				[5] = 8,
+				[6] = 9,
+				[7] = 10,
+				[8] = 11,
 			},
 			["type"] = 1,
 		},	
@@ -334,16 +426,45 @@ local pCard = {
 				[2] = 5,
 				[3] = 6,
 				[4] = 7,
+				[5] = 8,
+				[6] = 9,
+				[7] = 10,
+				[8] = 11,
 			},
 			["type"] = 2,
 		},
 		[3] = {
 			["card"] = {
-				[1] = 15,
-				[2] = 14,
-				[3] = 7,
+				[1] = 4,
+				[2] = 5,
+				[3] = 6,
+				[4] = 7,
+				[5] = 8,
+				[6] = 9,
+				[7] = 10,
+				[8] = 11,
 			},
 			["type"] = 3,
+		},
+		[4] = {
+			["card"] = {
+				[1] = 4,
+				[2] = 5,
+				[3] = 6,
+				[4] = 7,
+				[5] = 8,
+				[6] = 9,
+				[7] = 10,
+				[8] = 11,
+			},
+			["type"] = 4,
+		},
+		[5] = {
+			["card"] = {
+				[1] = 16,
+				[2] = 17,
+			},
+			["type"] = 5,
 		},
 	},
 }
@@ -351,8 +472,8 @@ local pCard = {
 local dizhu = {
 	[1] = {
 		["card"] = {
-			[1] = 8,
-			[2] = 9,
+			[1] = 13,
+			[2] = 14,
 		},
 		["type"] = 1,
 	},
@@ -370,41 +491,63 @@ mod.init(pCard, dizhu, 1)
 -- print(dump(allPlayerCard))
 
 local netCard = {
-	[1] = {
-		["card"] = {
-			[1] = 4,
-			[2] = 5,
-			[3] = 6,
-			[4] = 7,
-		},
-		["type"] = 1,
-	},	
-	[2] = {
-		["card"] = {
-			[1] = 4,
-			[2] = 5,
-			[3] = 6,
-			[4] = 7,
-		},
-		["type"] = 2,
-	},
+	-- [1] = {
+	-- 	["card"] = {
+	-- 		[1] = 6,
+	-- 	},
+	-- 	["type"] = 1,
+	-- },	
+	-- [2] = {
+	-- 	["card"] = {
+	-- 		[1] = 6,
+	-- 	},
+	-- 	["type"] = 2,
+	-- },
 	-- [3] = {
 	-- 	["card"] = {
-	-- 		[1] = 7,
+	-- 		[1] = 5,
 	-- 	},
 	-- 	["type"] = 3,
 	-- },
+	-- [4] = {
+	-- 	["card"] = {
+	-- 		[1] = 6,
+	-- 	},
+	-- 	["type"] = 3,
+	-- },
+	[1] = {
+		["card"] = {
+			[1] = 16,
+			[2] = 17,
+		},
+		["type"] = 5,
+	},
+}
+-- 出牌基本类型
+-- HANDOUT_DANGE = 100  		-- 单个
+-- HANDOUT_DUIZI = 101  		-- 对子
+-- HANDOUT_SANGE = 102  		-- 三个
+-- HANDOUT_SHUNZI = 103  		-- 顺子
+-- HANDOUT_LIANDUI = 104  		-- 连对
+-- HANDOUT_SANDAI_1 = 105  	-- 三带单
+-- HANDOUT_SANDAI_2 = 106  	-- 三带对子
+-- HANDOUT_FEIJI_1 = 107 		-- 飞机带单
+-- HANDOUT_FEIJI_2 = 108  		-- 飞机带对子
+-- HANDOUT_SIDAIER = 108  		-- 四带二
+-- HANDOUT_ZHADAN = 110 		-- 炸弹
+-- HANDOUT_HUOJIAN = 111  		-- 火箭
+
+local handType = HANDOUT_HUOJIAN
+local isHandOut = true
+lastHandOutType = HANDOUT_ZHADAN 
+lastHandOut = {
+	[1] = {3,4},
+	[2] = {3,4,10},
+	[3] = {3,4,6},
 }
 
--- local handType = HANDOUT_LIANDUI
--- local isHandOut = false
--- lastHandOutType = HANDOUT_LIANDUI 
--- lastHandOut = {
--- 	[1] = {3,4,5,6},
--- 	[2] = {3,4,5,6},
--- }
-
--- local errorcode = mod.followCard(1, netCard, handType, isHandOut)
--- print(">>>>>>>>>>>>>>>>>>", errorcode)
+local errorcode = mod.followCard(1, netCard, handType, isHandOut)
+print(">>>>>>>>>>>>>>>>>>", errorcode)
+]]
 
 return mod
