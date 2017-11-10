@@ -49,10 +49,10 @@ function REQUEST:quickstart()
 		return {errcode = 5, waittime = 0}  -- 已经在房间
 	end
 	local roomManager = skynet.uniqueservice("roommanager")
-	local idx = skynet.call(roomManager, "lua", "enterRoom", client_fd, playerId)
+	local idx, seat = skynet.call(roomManager, "lua", "enterRoom", client_fd, playerId)
 	oPlayer:setRoom(idx)
 	oPlayer:setState(1)
-	return {errcode = 0, waittime = 60}
+	return {errcode = 0, waittime = 60, seat = seat}
 end
 
 -- 取消快速开始

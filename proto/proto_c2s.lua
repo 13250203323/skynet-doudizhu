@@ -23,6 +23,7 @@ quickstart 3 {
     response {
         errcode 0 : integer
         waittime 1 : integer
+        seat 2 : integer
     }
 }
 

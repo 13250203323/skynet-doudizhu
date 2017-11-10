@@ -201,13 +201,30 @@ while true do
 			send_request("passfollow")
 		else -- 出牌、跟牌("cp,101,3,4,5,6,7"--"出牌、类型、34567")
 			local data = string.lua_string_split(cmd, ",")
-			local hType = data[2]
+			local hType = tonumber(data[2])
 			table.remove(data, 1)
 			table.remove(data, 2)
 			checkValue(data)
-			send_request("followcard", {fwcard = netCard, handtype = hType})
+			print(dump(netCard))
+			print(dump(myAllCard))
+			if #netCard ~= 0 then 
+				send_request("followcard", {fwcard = netCard, handtype = hType})
+			end
 		end
 	else
 		socket.usleep(100)
 	end
 end
+
+-- HANDOUT_DANGE = 100  		-- 单个
+-- HANDOUT_DUIZI = 101  		-- 对子
+-- HANDOUT_SANGE = 102  		-- 三个
+-- HANDOUT_SHUNZI = 103  		-- 顺子
+-- HANDOUT_LIANDUI = 104  		-- 连对
+-- HANDOUT_SANDAI_1 = 105  		-- 三带单
+-- HANDOUT_SANDAI_2 = 106  		-- 三带对子
+-- HANDOUT_FEIJI_1 = 107 		-- 飞机带单
+-- HANDOUT_FEIJI_2 = 108  		-- 飞机带对子
+-- HANDOUT_SIDAIER = 108  		-- 四带二
+-- HANDOUT_ZHADAN = 110 		-- 炸弹
+-- HANDOUT_HUOJIAN = 111  		-- 火箭

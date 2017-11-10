@@ -154,7 +154,11 @@ local function followCard(seat, card, handType)
 		if isWin then -- 游戏结束
 			dispatchAllPlayer("gameover", {win = seat})
 			endGame()
+			return 
 		end
+		local endTime = os.time() + handTime
+		checkFollowCard(endTime, handCardPriority)
+		dispatchAllPlayer("handoutpriority", {time = endTime, priority = handCardPriority})
 	end)
 	return errorcode
 end
@@ -166,7 +170,10 @@ local function passfollow(seat)
 		return 16
 	end
 	handCardPriority = handout.getNexSeat(handCardPriority)
-	dispatchAllPlayer("passfollow", {id = player[seat]})
+	dispatchAllPlayer("passfollow", {seat = seat})
+	local endTime = os.time() + handTime
+	checkFollowCard(endTime, handCardPriority)
+	dispatchAllPlayer("handoutpriority", {time = endTime, priority = handCardPriority})
 	return 0
 end
 
@@ -184,7 +191,7 @@ function checkFollowCard(endTime, seat)
 				handCardPriority = handout.getNexSeat(handCardPriority)
 				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isHandOut)
 				if not isHandOut then -- 直接不出
-					dispatchAllPlayer("passfollow", {id = player[seat]})
+					dispatchAllPlayer("passfollow", {seat = seat})
 				else
 					local card, iType, leftNums, isWin = handout.handCardAuto(seat)
 					dispatchAllPlayer("followcard", {fwcard = card, type = iType, seat = seat, leftcard = leftNums})
@@ -302,12 +309,12 @@ function CMD.addPlayer(fd, id, idx)
 				-- dispatchMessage(fd, "handcard", {dizhu = dizhuCard, myCard = playerCard[seat], 
 				-- 	otherplayer_1 = 13, otherplayer_2 = 13})
 			end
-			return true
+			return seat
 		end
 	end
 
 	if table.nums(player) >= 3 then 
-		return false
+		return
 	end
 
 	local seat = getSeat()
@@ -315,7 +322,7 @@ function CMD.addPlayer(fd, id, idx)
 	client[seat] = fd
 
 	isNew = false	
-	return true
+	return seat
 end
 
 function CMD.removePlayer(fd, id)

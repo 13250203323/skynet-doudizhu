@@ -34,16 +34,16 @@ function CMD.enterRoom(fd, id)
 	print("++++++++++进入房间：", id)
 	for idx, rm in pairs(room) do
 		-- idx：房间号，rm：房间
-		local result = skynet.call(rm, "lua", "addPlayer", fd, id, idx)
-		if result then 
-			return idx
+		local seat = skynet.call(rm, "lua", "addPlayer", fd, id, idx)
+		if seat then 
+			return idx, seat
 		end
 	end
 
 	local idx, rm = createRoom()
-	skynet.call(rm, "lua", "addPlayer", fd, id, idx)
+	local seat = skynet.call(rm, "lua", "addPlayer", fd, id, idx)
 
-	return idx -- 返回房号
+	return idx, seat -- 返回房号,座位号
 end
 
 -- 退出房间
