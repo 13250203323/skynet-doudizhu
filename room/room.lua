@@ -149,6 +149,7 @@ local function followCard(seat, card, handType)
 			return 
 		end
 		skynet.sleep(500)
+		handCardPriority = handout.getNexSeat(handCardPriority)
 		dispatchAllPlayer("followcard", {fwcard = card, handtype = handType, seat = seat, leftcard = leftNums})
 		if isWin then -- 游戏结束
 			dispatchAllPlayer("gameover", {win = seat})
@@ -156,6 +157,17 @@ local function followCard(seat, card, handType)
 		end
 	end)
 	return errorcode
+end
+
+-- 要不起
+local function passfollow(seat)
+	if seat ~= handCardPriority then 
+		print(">>>>>>>>>>>>>>出牌位置出错")
+		return 16
+	end
+	handCardPriority = handout.getNexSeat(handCardPriority)
+	dispatchAllPlayer("passfollow", {id = player[seat]})
+	return 0
 end
 
 -- 检测出牌（时间限制内没回协议默认不跟牌、出牌只出一个单）
@@ -169,9 +181,10 @@ function checkFollowCard(endTime, seat)
 			if os.time() >= endTime then 
 				-- isNotFollow: true-跟牌，false-出牌
 				local isHandOut = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
+				handCardPriority = handout.getNexSeat(handCardPriority)
 				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isHandOut)
 				if not isHandOut then -- 直接不出
-					dispatchAllPlayer("passfollow", {seat = seat})
+					dispatchAllPlayer("passfollow", {id = player[seat]})
 				else
 					local card, iType, leftNums, isWin = handout.handCardAuto(seat)
 					dispatchAllPlayer("followcard", {fwcard = card, type = iType, seat = seat, leftcard = leftNums})
@@ -354,6 +367,17 @@ function CMD.followcard(fd, id, card, handType)
 		return 14
 	end
 	return followCard(seat, card, handType)
+end
+
+function CMD.passfollow(fd, id, )
+	if not bRunning then 
+		return 13
+	end
+	local seat = getSeatById(id)
+	if handCardPriority ~= seat then 
+		return 14
+	end
+	return passfollow(seat)
 end
 
 skynet.start(function()

@@ -16,6 +16,26 @@ local request = host:attach(sproto.new(proto.c2s))
 
 local fd = assert(socket.connect("127.0.0.1", 8888))
 
+local myAllCard = {}
+local netCard = {}
+
+local function changeCardStyle(netcard)
+	local card = {}
+	for _, data in ipairs(netcard) do
+		local iType = data.type
+		if not card[iType] then 
+			card[iType] = {}
+		end
+		for _, iCard in ipairs(data["card"]) do
+			table.insert(card[iType], iCard)
+		end
+		table.sort(card[iType], function(A, B)
+			return A < B
+		end)
+	end		
+	return card
+end
+
 local function send_package(fd, pack)
 	local package = string.pack(">s2", pack)
 	socket.send(fd, package)
@@ -63,6 +83,12 @@ local last = ""
 
 local function print_request(name, args)
 	print("REQUEST", name)
+	if name == "handcard" then  
+		print(dump(args))
+		myAllCard = changeCardStyle(args.myCard)
+		print(dump(myAllCard))
+		return 
+	end
 	if args then
 		for k,v in pairs(args) do
 			print(k,v)
@@ -106,6 +132,39 @@ local function dispatch_package()
 	end
 end
 
+-- local netCard = {
+-- 	[1] = {
+-- 		["card"] = {
+-- 			[1] = 3,
+-- 			[2] = 9,
+-- 		},
+-- 		["type"] = 5,
+-- 	},
+-- }
+-- netCard
+local function checkValue(data)
+	netCard = {}
+	local result = {}
+	for _, sCard in ipairs(data) do
+		local iCard = tonumber(sCard)
+		for iType, dCard in pairs(myAllCard) do
+			if not result[iType] then 
+				result[iType] = {["card"]={},["type"]= iType}
+			end
+			for idx, c in pairs(dCard) do
+				if iCard == c then 
+					table.insert(result[iType]["card"], iCard)
+					table.remove(dCard, idx)
+					break
+				end
+			end
+		end
+	end
+	for _, da in pairs(result) do
+		table.insert(netCard, da)
+	end
+end
+
 while true do
 	dispatch_package()
 	local cmd = socket.readstdin()
@@ -138,6 +197,15 @@ while true do
 			send_request("calllandholder", {call = true})
 		elseif cmd == "101" then -- 不叫
 			send_request("calllandholder", {call = false})
+		elseif cmd == "999" then -- 不跟
+			send_request("passfollow")
+		else -- 出牌、跟牌("cp,101,3,4,5,6,7"--"出牌、类型、34567")
+			local data = string.lua_string_split(cmd, ",")
+			local hType = data[2]
+			table.remove(data, 1)
+			table.remove(data, 2)
+			checkValue(data)
+			send_request("followcard", {fwcard = netCard, handtype = hType})
 		end
 	else
 		socket.usleep(100)

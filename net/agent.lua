@@ -140,6 +140,20 @@ function REQUEST:followcard()
 	return {errcode = err}
 end
 
+function REQUEST:passfollow()
+	if not oPlayer then 
+		return {errcode = 4} -- 没玩家
+	elseif oPlayer:getRoom() == 0 then 
+		return {errcode = 6} -- 没进房间
+	elseif oPlayer:getState() == 1 then 
+		return {errcode = 12} -- 未准备
+	end
+	local roomIdx = oPlayer:getRoom()
+	local roomManager = skynet.uniqueservice("roommanager")
+	local err = skynet.call(roomManager, "lua", "followcard", client_fd, playerId, roomIdx)
+	return {errcode = err}
+end
+
 local function request(name, args, response)
 	local f = assert(REQUEST[name])
 	local r = f(args)

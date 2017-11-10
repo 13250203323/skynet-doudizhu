@@ -92,6 +92,15 @@ function CMD.followcard(fd, id, idx, card, handType)
 	return skynet.call(rm, "lua", "followcard", fd, id, card, handType)
 end
 
+-- 不出
+function CMD.passfollow(fd, id, idx)
+	local rm = room[idx]
+	if not rm then 
+		return 8
+	end	
+	return skynet.call(rm, "lua", "passfollow", fd, id)
+end
+
 skynet.start(function()
 	skynet.dispatch("lua", function(session, source, cmd, subcmd, ...)
 		local f = assert(CMD[cmd])

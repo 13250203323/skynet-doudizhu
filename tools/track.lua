@@ -166,3 +166,19 @@ function table.unique(t, bArray)
     end
     return n
 end
+
+function string.lua_string_split(str, split_char)
+    local sub_str_tab = {}
+    while (true) do
+        local bpos,epos = string.find(str, split_char)
+        if (not bpos) then
+            sub_str_tab[#sub_str_tab + 1] = str
+            break
+        end
+        local sub_str = string.sub(str, 1, bpos - 1)
+        sub_str_tab[#sub_str_tab + 1] = sub_str
+        str = string.sub(str, epos + 1, #str)
+    end
+
+    return sub_str_tab
+end

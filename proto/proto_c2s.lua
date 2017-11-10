@@ -70,7 +70,6 @@ followcard 8 {
 
 passfollow 9 {
     request {
-        seat 0 : integer
     }
     response {
         errcode 0 : integer

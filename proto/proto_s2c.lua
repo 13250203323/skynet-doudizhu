@@ -58,7 +58,7 @@ followcard 6 {
 
 passfollow 7 {
 	request {
-		seat 0 : integer
+		id 0 : integer
 	}
 }
 
