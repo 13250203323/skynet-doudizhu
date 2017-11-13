@@ -151,12 +151,17 @@ local function checkValue(data)
 			if not result[iType] then 
 				result[iType] = {["card"]={},["type"]= iType}
 			end
+			local b = false
 			for idx, c in pairs(dCard) do
 				if iCard == c then 
 					table.insert(result[iType]["card"], iCard)
 					table.remove(dCard, idx)
+					b = true
 					break
 				end
+			end
+			if b then
+				break
 			end
 		end
 	end
@@ -197,13 +202,13 @@ while true do
 			send_request("calllandholder", {call = true})
 		elseif cmd == "101" then -- 不叫
 			send_request("calllandholder", {call = false})
-		elseif cmd == "999" then -- 不跟
+		elseif cmd == "555" then -- 不跟
 			send_request("passfollow")
 		else -- 出牌、跟牌("cp,101,3,4,5,6,7"--"出牌、类型、34567")
 			local data = string.lua_string_split(cmd, ",")
 			local hType = tonumber(data[2])
 			table.remove(data, 1)
-			table.remove(data, 2)
+			table.remove(data, 1)
 			checkValue(data)
 			print(dump(netCard))
 			print(dump(myAllCard))
