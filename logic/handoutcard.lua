@@ -28,6 +28,14 @@ local function removeSameCard(data_1, data_2)
 	return data_1
 end
 
+local function getCardNums(data)
+	local num = 0 
+	for _, v in pairs(data) do
+		num = num + #v
+	end
+	return num
+end
+
 -- 检查是否胜利
 local function checkisWin(pC)
 	for _, data in ipairs(pC) do
@@ -374,16 +382,16 @@ end
 function mod.handCardAuto(seat)
 	local card = allPlayerCard[seat]
 	local iMinCard, iType, index_1, index_2
-	for idx, data in ipairs(card) do
+	for idx, data in pairs(card) do
 		if not iMinCard or iMinCard > data[1] then 
 			iMinCard = data[1]
-			iType = data.type
+			iType = idx
 		end
 	end
 	assert(iMinCard and iType, "handCardAuto error")
 	table.remove(allPlayerCard[seat][iType], 1)
 	local isWin = checkisWin(allPlayerCard[seat])
-	local result = {[1]={["flowcard"]={iMinCard},["type"]=iType}}
+	local result = {[1]={["card"]={iMinCard},["type"]=iType}}
 	local nums = getCardNums(allPlayerCard[seat])
 	lastHandOut = {[iType] = {iMinCard}}
 	lastHandOutType = HANDOUT_DANGE
@@ -393,6 +401,8 @@ end
 -- 跟牌
 -- card：协议格式
 function mod.followCard(seat, netCard, handType, isHandOut)
+	print(">>>>>>>>>>>>>>followCard", seat)
+	print(dump(netCard))
 	local card = changeCardStyle(netCard)
 	print(">>>>>>>>>出牌，类型：", handType)
 	local errorcode = handout[handType](seat, card, isHandOut)
