@@ -29,7 +29,7 @@ local bRunning = false
 local index = 0 -- 房号
 local isNew = true -- 是否新建
 local callTime = 20 -- 叫地主时间限制
-local handTime = 20 -- 出牌时间限制
+local handTime = 100 -- 出牌时间限制
 
 -- 游戏进行中变量
 local playerCard = {} -- 玩家牌，key：seat
@@ -99,6 +99,7 @@ local function callLandHolder(seat, bCall)
 		handCardPriority = dizhuSeat
 		handout.init(playerCard, dizhuCard, dizhuSeat)
 		-- 准备出牌
+		print(">>>>>>>>>>>>>>出牌-dizhuSeat:", dizhuSeat)
 		local endTime = os.time() + handTime
 		checkFollowCard(endTime, dizhuSeat)
 		dispatchAllPlayer("handoutpriority", {time = endTime, priority = dizhuSeat})
@@ -149,6 +150,7 @@ local function followCard(seat, card, handType)
 			return 
 		end
 		skynet.sleep(500)
+		lasthandPriority = handCardPriority
 		handCardPriority = handout.getNexSeat(handCardPriority)
 		dispatchAllPlayer("followcard", {fwcard = card, handtype = handType, seat = seat, leftcard = leftNums})
 		if isWin then -- 游戏结束
@@ -190,9 +192,14 @@ function checkFollowCard(endTime, seat)
 				local isHandOut = (handCardPriority == lasthandPriority or lasthandPriority == 0) and true or false
 				handCardPriority = handout.getNexSeat(handCardPriority)
 				print(">>>>>>>>>>>>时间到，自动出牌或者不跟：", seat, isHandOut)
+				print(">>>>>>>>>>>>下一出牌者:", handCardPriority)
+				local endTime = os.time() + handTime
+				checkFollowCard(endTime, handCardPriority)
+				dispatchAllPlayer("handoutpriority", {time = endTime, priority = handCardPriority})				
 				if not isHandOut then -- 直接不出
 					dispatchAllPlayer("passfollow", {seat = seat})
 				else
+					lasthandPriority = handCardPriority
 					local card, iType, leftNums, isWin = handout.handCardAuto(seat)
 					dispatchAllPlayer("followcard", {fwcard = card, type = iType, seat = seat, leftcard = leftNums})
 					if isWin then -- 游戏结束
@@ -373,10 +380,12 @@ function CMD.followcard(fd, id, card, handType)
 	if handCardPriority ~= seat then 
 		return 14
 	end
+	print(dump(card))
+	if not card then return 100 end
 	return followCard(seat, card, handType)
 end
 
-function CMD.passfollow(fd, id, )
+function CMD.passfollow(fd, id, seat)
 	if not bRunning then 
 		return 13
 	end
